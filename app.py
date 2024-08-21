@@ -135,10 +135,14 @@ m = folium.Map(location=oklahoma_coords, zoom_start=7)
 
 # Add blue dots for each location in the DataFrame
 for i, row in st.session_state['locations'].iterrows():
-    folium.Marker(
+    folium.CircleMarker(
         location=[row['Latitude'], row['Longitude']],
+        radius=7, #circle size
+        color='#0000FF',
+        fill=True,
+        fill_color='#0000FF',
+        fill_opacity=0.7,
         popup=f"{row['City']}, {row['State']}" if row['City'] != "N/A" else f"({row['Latitude']}, {row['Longitude']})",
-        icon=folium.Icon(color="blue")
     ).add_to(m)
 
 # Display the map
