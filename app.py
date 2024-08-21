@@ -7,7 +7,7 @@ from streamlit_folium import st_folium
 import random
 
 # Initialize geolocator
-geolocator = Nominatim(user_agent="geoapiExercises")
+geolocator = Nominatim(user_agent="blue_dots_oklahoma (jodiewiggins18@gmail.com)")
 
 # Initialize an empty DataFrame to store locations
 if 'locations' not in st.session_state:
