@@ -26,6 +26,18 @@ def add_jitter(lat, lon, jitter_amount=0.0001):
     lon += random.uniform(-jitter_amount, jitter_amount)
     return lat, lon
 
+# List of U.S. states
+states = [
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
+    'Wisconsin', 'Wyoming'
+]
+
 # Make title blue
 st.markdown(
     """
@@ -52,7 +64,8 @@ input_method = st.radio("Select input method", ("City and State", "Latitude and 
 if input_method == "City and State":
     # Input boxes for city and state
     city = st.text_input("Enter the City")
-    state = st.text_input("Enter the State")
+    # Dropdown menu for state
+    state = st.selectbox("Select the State", options=states)
 
     # Button to add location
     if st.button("Add Location"):
@@ -93,7 +106,7 @@ elif input_method == "Latitude and Longitude":
             st.error("Please enter both latitude and longitude.")
 
 # Display the map centered on Oklahoma
-oklahoma_coords = (35.0078, -97.0929)
+oklahoma_coords = (35.0020, -98.50000)
 m = folium.Map(location=oklahoma_coords, zoom_start=7)
 
 # Add blue dots for each location in the DataFrame
@@ -105,7 +118,7 @@ for i, row in st.session_state['locations'].iterrows():
     ).add_to(m)
 
 # Display the map
-st_folium(m, width=700, height=500)
+st_folium(m, width=800, height=450)
 
 # Show the DataFrame of locations
 st.dataframe(st.session_state['locations'])
