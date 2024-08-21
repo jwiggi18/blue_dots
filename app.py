@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import folium
 from streamlit_folium import st_folium
 import random
@@ -14,10 +15,14 @@ if 'locations' not in st.session_state:
 
 # Function to get lat, lon from city, state
 def get_lat_lon(city, state):
-    location = geolocator.geocode(f"{city}, {state}")
-    if location:
-        return location.latitude, location.longitude
-    else:
+    try:
+        location = geolocator.geocode(f"{city}, {state}")
+        if location:
+            return location.latitude, location.longitude
+        else:
+            return None, None
+    except (GeocoderTimedOut, GeocoderServiceError) as e:
+        st.error(f"Geocoding service error: {e}")
         return None, None
 
 # Function to add jitter to latitude and longitude
@@ -37,6 +42,9 @@ states = [
     'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
     'Wisconsin', 'Wyoming'
 ]
+
+# Find the index of "Oklahoma" in the states list
+oklahoma_index = states.index("Oklahoma")
 
 # Make title blue
 st.markdown(
@@ -65,7 +73,8 @@ if input_method == "City and State":
     # Input boxes for city and state
     city = st.text_input("Enter the City")
     # Dropdown menu for state
-    state = st.selectbox("Select the State", options=states)
+    state = st.selectbox("Select the State", options=states, index=oklahoma_index)
+
 
     # Button to add location
     if st.button("Add Location"):
@@ -77,6 +86,8 @@ if input_method == "City and State":
                 st.session_state['locations'] = st.session_state['locations'].append(new_data, ignore_index=True)
                 
                 st.success(f"Location added: {city}, {state} ({lat}, {lon})")
+                # Debug: Print the df
+                st.write(st.session_state['locations'])  # Check the current DataFrame content
             else:
                 st.error("Could not find the location. Please check the city and state.")
         else:
@@ -100,6 +111,8 @@ elif input_method == "Latitude and Longitude":
                 st.session_state['locations'] = st.session_state['locations'].append(new_data, ignore_index=True)
                 
                 st.success(f"Location added: ({lat}, {lon})")
+                # Debug: Print the DataFrame
+                st.write(st.session_state['locations'])  # Check the current DataFrame content
             except ValueError:
                 st.error("Please enter valid numerical values for latitude and longitude.")
         else:
