@@ -3,6 +3,7 @@ import pandas as pd
 from geopy.geocoders import Nominatim
 import folium
 from streamlit_folium import st_folium
+import random
 
 # Initialize geolocator
 geolocator = Nominatim(user_agent="geoapiExercises")
@@ -19,8 +20,31 @@ def get_lat_lon(city, state):
     else:
         return None, None
 
-# Title of the Streamlit app
-st.title("Blue Dots in Oklahoma!!")
+# Function to add jitter to latitude and longitude
+def add_jitter(lat, lon, jitter_amount=0.0001):
+    lat += random.uniform(-jitter_amount, jitter_amount)
+    lon += random.uniform(-jitter_amount, jitter_amount)
+    return lat, lon
+
+# Make title blue
+st.markdown(
+    """
+    <style>
+    .title {
+        background-color: #0073e6;
+        padding: 10px;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+    }
+    </style>
+    <div class="title">
+        <h1>Blue Dots in Oklahoma!!</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Radio buttons to select input method
 input_method = st.radio("Select input method", ("City and State", "Latitude and Longitude"))
@@ -56,6 +80,8 @@ elif input_method == "Latitude and Longitude":
             try:
                 lat = float(latitude)
                 lon = float(longitude)
+                # Add jitter to the coordinates
+                lat, lon = add_jitter(lat, lon)
                 # Add the location to the DataFrame
                 new_data = {'City': "N/A", 'State': "N/A", 'Latitude': lat, 'Longitude': lon}
                 st.session_state['locations'] = st.session_state['locations'].append(new_data, ignore_index=True)
@@ -68,7 +94,7 @@ elif input_method == "Latitude and Longitude":
 
 # Display the map centered on Oklahoma
 oklahoma_coords = (35.0078, -97.0929)
-m = folium.Map(location=oklahoma_coords, zoom_start=6)
+m = folium.Map(location=oklahoma_coords, zoom_start=7)
 
 # Add blue dots for each location in the DataFrame
 for i, row in st.session_state['locations'].iterrows():
