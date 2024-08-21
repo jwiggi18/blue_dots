@@ -16,7 +16,7 @@ if 'locations' not in st.session_state:
 # Function to get lat, lon from city, state
 def get_lat_lon(city, state):
     try:
-        location = geolocator.geocode(f"{city}, {state}")
+        location = geolocator.geocode(f"{city}, {state}, 'USA'")
         if location:
             return location.latitude, location.longitude
         else:
@@ -26,9 +26,12 @@ def get_lat_lon(city, state):
         return None, None
 
 # Function to add jitter to latitude and longitude
-def add_jitter(lat, lon, jitter_amount=0.0001):
-    lat += random.uniform(-jitter_amount, jitter_amount)
-    lon += random.uniform(-jitter_amount, jitter_amount)
+def add_jitter(lat, lon, jitter_amount=0.05):
+    lat_jitter = random.uniform(-jitter_amount, jitter_amount)
+    lon_jitter = random.uniform(-jitter_amount, jitter_amount)
+    lat += lat_jitter
+    lon += lon_jitter
+    st.write(f"Jitter applied: lat + {lat_jitter}, lon + {lon_jitter}")  # Debugging line to show jitter amount
     return lat, lon
 
 # List of U.S. states
@@ -81,9 +84,16 @@ if input_method == "City and State":
         if city and state:
             lat, lon = get_lat_lon(city, state)
             if lat and lon:
+                #Apply jitter
+                lat, lon = add_jitter(lat, lon)
+                #debugging
+                st.write(f"Jittered coords: ({lat}, {lon})")
                 # Add the location to the DataFrame
                 new_data = {'City': city, 'State': state, 'Latitude': lat, 'Longitude': lon}
-                st.session_state['locations'] = st.session_state['locations'].append(new_data, ignore_index=True)
+                #convert dictionary to dataframe with a single row
+                new_data_df = pd.DataFrame([new_data])
+                #add the new row to the existing df
+                st.session_state['locations'] = pd.concat([st.session_state['locations'], new_data_df], ignore_index=True)
                 
                 st.success(f"Location added: {city}, {state} ({lat}, {lon})")
                 # Debug: Print the df
@@ -105,7 +115,8 @@ elif input_method == "Latitude and Longitude":
                 lat = float(latitude)
                 lon = float(longitude)
                 # Add jitter to the coordinates
-                lat, lon = add_jitter(lat, lon)
+                lat, lon = add_jitter(lat, lon) #add jitter to differentiate overlapping dots
+                st.write(f"Jittered coordinates: ({lat}, {lon})") #debugging to check if jitter is working
                 # Add the location to the DataFrame
                 new_data = {'City': "N/A", 'State': "N/A", 'Latitude': lat, 'Longitude': lon}
                 st.session_state['locations'] = st.session_state['locations'].append(new_data, ignore_index=True)
@@ -135,4 +146,6 @@ st_folium(m, width=800, height=450)
 
 # Show the DataFrame of locations
 st.dataframe(st.session_state['locations'])
+
+
 
