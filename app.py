@@ -5,6 +5,7 @@ from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 import folium
 from streamlit_folium import st_folium
 import random
+import json
 
 # Set page config to wide
 st.set_page_config(layout="wide")
@@ -140,6 +141,10 @@ elif input_method == "Latitude and Longitude":
 col1, col2 = st.columns([3, 2])  # Adjust the column width ratio as needed
 
 with col1:
+    # Load Oklahoma geoJSON data
+    with open("oklahoma.geojson") as f:
+        oklahoma_geojson = json.load(f)
+        
     # Display the map centered on Oklahoma
     oklahoma_coords = (35.0020, -98.50000)
     m = folium.Map(location=oklahoma_coords, zoom_start=7)
@@ -156,11 +161,10 @@ with col1:
             popup=f"{row['City']}, {row['State']}" if row['City'] != "N/A" else f"({row['Latitude']}, {row['Longitude']})"
         ).add_to(m)
     
-    # Add GeoJSON outline for Oklahoma
-    oklahoma_geojson = "oklahoma.geojson"
-
-    folium.GeoJson(
+    #add state outline
+    oklahoma_layer = folium.GeoJson(
         oklahoma_geojson,
+        name="Oklahoma",
         style_function=lambda x: {
             'fillColor': 'transparent',
             'color': 'blue',  # Outline color
@@ -168,6 +172,10 @@ with col1:
             'opacity': 1
         }
     ).add_to(m)
+    
+    # adjust the map zoom to ensure the whole state stays visible (as defined by geoJSON file)
+    bounds = oklahoma_layer.get_bounds()
+    m.fit_bounds(bounds)
 
     # Display the map
     map_placeholder = st.empty()  # Create a placeholder for the map
