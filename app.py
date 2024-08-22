@@ -122,7 +122,10 @@ elif input_method == "Latitude and Longitude":
                 st.write(f"Jittered coordinates: ({lat}, {lon})") #debugging to check if jitter is working
                 # Add the location to the DataFrame
                 new_data = {'City': "N/A", 'State': "N/A", 'Latitude': lat, 'Longitude': lon}
-                st.session_state['locations'] = st.session_state['locations'].append(new_data, ignore_index=True)
+                #convert dictionary to dataframe with a single row
+                new_data_df = pd.DataFrame([new_data])
+                #add new row to existing df
+                st.session_state['locations'] = pd.concat([st.session_state['locations'], new_data_df], ignore_index=True)
                 
                 st.success(f"Location added: ({lat}, {lon})")
                 # Debug: Print the DataFrame
