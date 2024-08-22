@@ -6,6 +6,9 @@ import folium
 from streamlit_folium import st_folium
 import random
 
+# Set page config to wide
+st.set_page_config(layout="wide")
+
 # Initialize geolocator
 geolocator = Nominatim(user_agent="blue_dots_oklahoma (jodiewiggins18@gmail.com)")
 
@@ -70,7 +73,7 @@ st.markdown(
 
 
 # Radio buttons to select input method
-input_method = st.radio("Select input method", ("City and State", "Latitude and Longitude"))
+input_method = st.radio("Select input method (if you don't live in a city you can enter your latitude and longitude)", ("City and State", "Latitude and Longitude"))
 
 if input_method == "City and State":
     # Input boxes for city and state
@@ -129,27 +132,51 @@ elif input_method == "Latitude and Longitude":
         else:
             st.error("Please enter both latitude and longitude.")
 
-# Display the map centered on Oklahoma
-oklahoma_coords = (35.0020, -98.50000)
-m = folium.Map(location=oklahoma_coords, zoom_start=7)
+    
+# Create a layout with map and dataframe side by side
+col1, col2 = st.columns([3, 2])  # Adjust the column width ratio as needed
 
-# Add blue dots for each location in the DataFrame
-for i, row in st.session_state['locations'].iterrows():
-    folium.CircleMarker(
-        location=[row['Latitude'], row['Longitude']],
-        radius=7, #circle size
-        color='#0000FF',
-        fill=True,
-        fill_color='#0000FF',
-        fill_opacity=0.7,
-        popup=f"{row['City']}, {row['State']}" if row['City'] != "N/A" else f"({row['Latitude']}, {row['Longitude']})",
+with col1:
+    # Display the map centered on Oklahoma
+    oklahoma_coords = (35.0020, -98.50000)
+    m = folium.Map(location=oklahoma_coords, zoom_start=7)
+
+    # Add blue dots for each location in the DataFrame
+    for i, row in st.session_state['locations'].iterrows():
+        folium.CircleMarker(
+            location=[row['Latitude'], row['Longitude']],
+            radius=7,
+            color='#0000FF',
+            fill=True,
+            fill_color='#0000FF',
+            fill_opacity=0.7,
+            popup=f"{row['City']}, {row['State']}" if row['City'] != "N/A" else f"({row['Latitude']}, {row['Longitude']})"
+        ).add_to(m)
+    
+    # Add GeoJSON outline for Oklahoma
+    oklahoma_geojson = "oklahoma.geojson"
+
+    folium.GeoJson(
+        oklahoma_geojson,
+        style_function=lambda x: {
+            'fillColor': 'transparent',
+            'color': 'blue',  # Outline color
+            'weight': 3,      # Outline weight
+            'opacity': 1
+        }
     ).add_to(m)
 
-# Display the map
-st_folium(m, width=800, height=450)
+    # Display the map
+    map_placeholder = st.empty()  # Create a placeholder for the map
+    map_placeholder_folium = st_folium(m, width=800, height=450)
 
-# Show the DataFrame of locations
-st.dataframe(st.session_state['locations'])
+with col2:
+    # Group by city and state to get counts
+    location_counts = st.session_state['locations'].groupby(['City', 'State']).size().reset_index(name='Count')
+    # Display the DataFrame with counts
+    st.dataframe(location_counts)
 
 
+st.write("Oklahoma GeoJSON file from ")
+st.markdown("[US States GeoJSON](https://raw.githubusercontent.com/deldersveld/topojson/master/countries/united-states/us-states.json)", unsafe_allow_html=True)
 
