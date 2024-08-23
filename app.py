@@ -7,8 +7,21 @@ from streamlit_folium import st_folium
 import random
 import json
 
+
 # Set page config to wide
 st.set_page_config(layout="wide")
+
+# Custom CSS to increase font size for all text input fields
+st.markdown(
+    """
+    <style>
+    input[type="text"] {
+        font-size: 20px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # Initialize geolocator
 geolocator = Nominatim(user_agent="blue_dots_oklahoma (jodiewiggins18@gmail.com)")
@@ -109,8 +122,8 @@ if input_method == "City and State":
 
 elif input_method == "Latitude and Longitude":
     # Input boxes for latitude and longitude
-    latitude = st.text_input("Enter Latitude")
-    longitude = st.text_input("Enter Longitude")
+    latitude = st.text_input("Enter Latitude (a positive #: e.g. 35.46)")
+    longitude = st.text_input("Enter Longitude (a negative #: if google gave you a positive # just put a negative (-) in front of it e.g. -97.51)")
 
     # Button to add location
     if st.button("Add Location"):
@@ -137,57 +150,66 @@ elif input_method == "Latitude and Longitude":
             st.error("Please enter both latitude and longitude.")
 
     
-# Create a layout with map and dataframe side by side
-col1, col2 = st.columns([3, 2])  # Adjust the column width ratio as needed
 
-with col1:
-    # Load Oklahoma geoJSON data
-    with open("oklahoma.geojson") as f:
-        oklahoma_geojson = json.load(f)
+# Load Oklahoma geoJSON data
+with open("oklahoma.geojson") as f:
+    oklahoma_geojson = json.load(f)
         
-    # Display the map centered on Oklahoma
-    oklahoma_coords = (35.0020, -98.50000)
-    m = folium.Map(location=oklahoma_coords, zoom_start=7)
+# Display the map centered on Oklahoma
+oklahoma_coords = (35.4676, -97.5164)
+m = folium.Map(location=oklahoma_coords, zoom_start=7)
 
     # Add blue dots for each location in the DataFrame
-    for i, row in st.session_state['locations'].iterrows():
-        folium.CircleMarker(
-            location=[row['Latitude'], row['Longitude']],
-            radius=7,
-            color='#0000FF',
-            fill=True,
-            fill_color='#0000FF',
-            fill_opacity=0.7,
-            popup=f"{row['City']}, {row['State']}" if row['City'] != "N/A" else f"({row['Latitude']}, {row['Longitude']})"
-        ).add_to(m)
-    
-    #add state outline
-    oklahoma_layer = folium.GeoJson(
-        oklahoma_geojson,
-        name="Oklahoma",
-        style_function=lambda x: {
-            'fillColor': 'transparent',
-            'color': 'blue',  # Outline color
-            'weight': 3,      # Outline weight
-            'opacity': 1
-        }
+for i, row in st.session_state['locations'].iterrows():
+    folium.CircleMarker(
+        location=[row['Latitude'], row['Longitude']],
+        radius=7,
+        color='#0000FF',
+        fill=True,
+        fill_color='#0000FF',
+        fill_opacity=0.7,
+        popup=f"{row['City']}, {row['State']}" if row['City'] != "N/A" else f"({row['Latitude']}, {row['Longitude']})"
     ).add_to(m)
     
-    # adjust the map zoom to ensure the whole state stays visible (as defined by geoJSON file)
-    bounds = oklahoma_layer.get_bounds()
-    m.fit_bounds(bounds)
+#add state outline
+oklahoma_layer = folium.GeoJson(
+    data=oklahoma_geojson,
+    name="Oklahoma",
+    style_function=lambda x: {
+        'fillColor': 'transparent',
+        'color': 'blue',  # Outline color
+        'weight': 3,      # Outline weight
+        'opacity': 1
+    }
+).add_to(m)
+    
+# adjust the map zoom to ensure the whole state stays visible (as defined by geoJSON file)
+bounds = oklahoma_layer.get_bounds()
+m.fit_bounds(bounds)
 
-    # Display the map
-    map_placeholder = st.empty()  # Create a placeholder for the map
-    map_placeholder_folium = st_folium(m, width=800, height=450)
+# Display the map
+st_folium(m, width='100%', height=400)
 
-with col2:
-    # Group by city and state to get counts
-    location_counts = st.session_state['locations'].groupby(['City', 'State']).size().reset_index(name='Count')
-    # Display the DataFrame with counts
-    st.dataframe(location_counts)
+# Group by city and state to get counts
+location_counts = st.session_state['locations'].groupby(['City', 'State']).size().reset_index(name='Count')
+# Display the DataFrame with counts
+st.dataframe(location_counts)
 
 
-st.write("Oklahoma GeoJSON file from ")
-st.markdown("[US States GeoJSON](https://raw.githubusercontent.com/deldersveld/topojson/master/countries/united-states/us-states.json)", unsafe_allow_html=True)
+st.markdown(
+    """
+    Oklahoma GeoJSON file from 
+    [US States GeoJSON](https://raw.githubusercontent.com/deldersveld/topojson/master/countries/united-states/us-states.json)
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    """
+    Code for this page available at 
+    [GitHub](https://github.com/jwiggi18/blue_dots)
+    """,
+    unsafe_allow_html=True
+)
+
 
