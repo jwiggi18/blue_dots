@@ -189,14 +189,20 @@ oklahoma_layer = folium.GeoJson(
 bounds = oklahoma_layer.get_bounds()
 m.fit_bounds(bounds)
 
-# Display the map
-st_folium(m, width='100%', height=400)
-
 # Group by city and state to get counts
 location_counts = st.session_state['locations'].groupby(['City', 'State']).size().reset_index(name='Count')
-# Display the DataFrame with counts
-st.dataframe(location_counts)
+#calculate total entries
+total_entries = location_counts['Count'].sum()
+# append total to df
+total_row = pd.DataFrame([{'City': 'Total', 'State': '', 'Count': total_entries}])
+location_counts = pd.concat([location_counts, total_row], ignore_index=True)
 
+
+#Display the map and Dataframe
+container = st.container()
+with container:
+    st_folium(m, width='100%', height=400)
+    st.dataframe(location_counts)
 
 st.markdown(
     """
