@@ -12,16 +12,18 @@ import json
 st.set_page_config(layout="wide")
 
 # Custom CSS to increase font size for all text input fields
-st.markdown(
-    """
-    <style>
-    input[type="text"] {
-        font-size: 20px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+font_css = """
+<style>
+div[class*="stRadio"] label p {
+    font-size: 20px;
+}
+
+div[class*=stTextInput] label p {
+    font-size: 20px;
+}
+</style>
+"""
+    
 
 # Initialize geolocator
 geolocator = Nominatim(user_agent="blue_dots_oklahoma (jodiewiggins18@gmail.com)")
@@ -85,7 +87,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
+st.write(font_css, unsafe_allow_html=True)
 # Radio buttons to select input method
 input_method = st.radio("Select input method (if you don't live in a city you can enter your latitude and longitude)", ("City and State", "Latitude and Longitude"))
 
