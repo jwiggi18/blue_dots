@@ -8,7 +8,7 @@ beautifulsoup4==4.12.3
 blinker==1.8.2
 branca==0.7.2
 cachetools==5.3.3
-certifi
+certifi==2024.2.2
 cffi==1.16.0
 charset-normalizer==3.3.2
 click==8.1.7
@@ -115,7 +115,6 @@ soupsieve==2.5
 stack-data==0.6.3
 streamlit==1.35.0
 streamlit_folium==0.22.0
-sqlite3
 tenacity==8.3.0
 threadpoolctl==3.5.0
 toml==0.10.2
