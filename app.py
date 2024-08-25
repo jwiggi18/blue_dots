@@ -196,7 +196,6 @@ location_counts = locations_df.groupby(['City', 'State']).size().reset_index(nam
 # Add a running total of all entries at the bottom of the dataframe
 total_count = pd.DataFrame({'City': ['Total'], 'State': [''], 'Count': [location_counts['Count'].sum()]})
 location_counts_with_total = pd.concat([location_counts, total_count], ignore_index=True)
-st.dataframe(location_counts_with_total)
 
 #Display the map and Dataframe
 container = st.container()
