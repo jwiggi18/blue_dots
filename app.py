@@ -6,10 +6,26 @@ import folium
 from streamlit_folium import st_folium
 import random
 import json
-
+import sqlite3
 
 # Set page config to wide
 st.set_page_config(layout="wide")
+
+# Connect to/create SQLite database
+conn = sqlite3.connect('locations.db')
+c = conn.cursor()
+
+# Create table if it doesn't exist
+c.execute('''
+    CREATE TABLE IF NOT EXISTS locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        city TEXT,
+        state TEXT,
+        latitude REAL,
+        longitude REAL
+    )
+''')
+conn.commit()
 
 # Custom CSS to increase font size for all text input fields
 font_css = """
@@ -53,20 +69,16 @@ def add_jitter(lat, lon, jitter_amount=0.05):
     st.write(f"Jitter applied: lat + {lat_jitter}, lon + {lon_jitter}")  # Debugging line to show jitter amount
     return lat, lon
 
-# List of U.S. states
-states = [
-    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
-    'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
-    'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
-    'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
-    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
-    'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
-    'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
-    'Wisconsin', 'Wyoming'
-]
-
-# Find the index of "Oklahoma" in the states list
-oklahoma_index = states.index("Oklahoma")
+# add location to the database
+def add_location_to_db(city, state, lat, lon):
+    c.execute('INSERT INTO locations (city, state, latitude, longitude) VALUES (?, ?, ?, ?)', 
+              (city, state, lat, lon))
+    conn.commit()
+    
+# pull locations from the database
+def fetch_all_locations():
+    c.execute('SELECT city, state, latitude, longitude FROM locations')
+    return pd.DataFrame(c.fetchall(), columns=['City', 'State', 'Latitude', 'Longitude'])
 
 # Make title blue
 st.markdown(
@@ -85,7 +97,9 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
-)
+
+# Find the index of "Oklahoma" in the states list
+oklahoma_index = states.index("Oklahoma")
 
 st.write(font_css, unsafe_allow_html=True)
 # Radio buttons to select input method
@@ -95,28 +109,27 @@ if input_method == "City and State":
     # Input boxes for city and state
     city = st.text_input("Enter the City")
     # Dropdown menu for state
+    states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+              'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+              'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+              'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+              'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+              'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+              'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
+              'Wisconsin', 'Wyoming']
+    oklahoma_index = states.index("Oklahoma")
     state = st.selectbox("Select the State", options=states, index=oklahoma_index)
-
 
     # Button to add location
     if st.button("Add Location"):
         if city and state:
             lat, lon = get_lat_lon(city, state)
             if lat and lon:
-                #Apply jitter
+                #add jitter
                 lat, lon = add_jitter(lat, lon)
-                #debugging
-                st.write(f"Jittered coords: ({lat}, {lon})")
-                # Add the location to the DataFrame
-                new_data = {'City': city, 'State': state, 'Latitude': lat, 'Longitude': lon}
-                #convert dictionary to dataframe with a single row
-                new_data_df = pd.DataFrame([new_data])
-                #add the new row to the existing df
-                st.session_state['locations'] = pd.concat([st.session_state['locations'], new_data_df], ignore_index=True)
-                
+                #add location to db
+                add_location_to_db(city, state, lat, lon)
                 st.success(f"Location added: {city}, {state} ({lat}, {lon})")
-                # Debug: Print the df
-                st.write(st.session_state['locations'])  # Check the current DataFrame content
             else:
                 st.error("Could not find the location. Please check the city and state.")
         else:
@@ -124,8 +137,8 @@ if input_method == "City and State":
 
 elif input_method == "Latitude and Longitude":
     # Input boxes for latitude and longitude
-    latitude = st.text_input("Enter Latitude (a positive #: e.g. 35.46)")
-    longitude = st.text_input("Enter Longitude (a negative #: if google gave you a positive # just put a negative (-) in front of it e.g. -97.51)")
+    latitude = st.text_input("Enter Latitude")
+    longitude = st.text_input("Enter Longitude")
 
     # Button to add location
     if st.button("Add Location"):
@@ -134,24 +147,17 @@ elif input_method == "Latitude and Longitude":
                 lat = float(latitude)
                 lon = float(longitude)
                 # Add jitter to the coordinates
-                lat, lon = add_jitter(lat, lon) #add jitter to differentiate overlapping dots
-                st.write(f"Jittered coordinates: ({lat}, {lon})") #debugging to check if jitter is working
-                # Add the location to the DataFrame
-                new_data = {'City': "N/A", 'State': "N/A", 'Latitude': lat, 'Longitude': lon}
-                #convert dictionary to dataframe with a single row
-                new_data_df = pd.DataFrame([new_data])
-                #add new row to existing df
-                st.session_state['locations'] = pd.concat([st.session_state['locations'], new_data_df], ignore_index=True)
-                
+                lat, lon = add_jitter(lat, lon) 
+                #add location to the db               
+                add_location_to_db("N/A", "N/A", lat, lon)
                 st.success(f"Location added: ({lat}, {lon})")
-                # Debug: Print the DataFrame
-                st.write(st.session_state['locations'])  # Check the current DataFrame content
             except ValueError:
                 st.error("Please enter valid numerical values for latitude and longitude.")
         else:
             st.error("Please enter both latitude and longitude.")
 
-    
+# Fetch locations from the database
+locations_df = fetch_all_locations()    
 
 # Load Oklahoma geoJSON data
 with open("oklahoma.geojson") as f:
@@ -161,11 +167,11 @@ with open("oklahoma.geojson") as f:
 oklahoma_coords = (35.4676, -97.5164)
 m = folium.Map(location=oklahoma_coords, zoom_start=7)
 
-    # Add blue dots for each location in the DataFrame
-for i, row in st.session_state['locations'].iterrows():
+# Add blue dots for each location in the DataFrame
+for i, row in locations_df.iterrows():
     folium.CircleMarker(
         location=[row['Latitude'], row['Longitude']],
-        radius=7,
+        radius=6,
         color='#0000FF',
         fill=True,
         fill_color='#0000FF',
@@ -190,12 +196,14 @@ bounds = oklahoma_layer.get_bounds()
 m.fit_bounds(bounds)
 
 # Group by city and state to get counts
-location_counts = st.session_state['locations'].groupby(['City', 'State']).size().reset_index(name='Count')
-#calculate total entries
-total_entries = location_counts['Count'].sum()
-# append total to df
-total_row = pd.DataFrame([{'City': 'Total', 'State': '', 'Count': total_entries}])
-location_counts = pd.concat([location_counts, total_row], ignore_index=True)
+location_counts = locations_df.groupby(['City', 'State']).size().reset_index(name='Count')
+# Display the DataFrame with counts
+st.dataframe(location_counts)
+
+# Add a running total of all entries at the bottom of the dataframe
+total_count = pd.DataFrame({'City': ['Total'], 'State': [''], 'Count': [location_counts['Count'].sum()]})
+location_counts_with_total = pd.concat([location_counts, total_count], ignore_index=True)
+st.dataframe(location_counts_with_total)
 
 
 #Display the map and Dataframe
@@ -203,6 +211,9 @@ container = st.container()
 with container:
     st_folium(m, width='100%', height=400)
     st.dataframe(location_counts)
+    
+#close db connection
+conn.close()
 
 st.markdown(
     """
