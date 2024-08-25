@@ -44,10 +44,6 @@ div[class*=stTextInput] label p {
 # Initialize geolocator
 geolocator = Nominatim(user_agent="blue_dots_oklahoma (jodiewiggins18@gmail.com)")
 
-# Initialize an empty DataFrame to store locations
-if 'locations' not in st.session_state:
-    st.session_state['locations'] = pd.DataFrame(columns=['City', 'State', 'Latitude', 'Longitude'])
-
 # Function to get lat, lon from city, state
 def get_lat_lon(city, state):
     try:
@@ -97,11 +93,10 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True
-
-# Find the index of "Oklahoma" in the states list
-oklahoma_index = states.index("Oklahoma")
+)
 
 st.write(font_css, unsafe_allow_html=True)
+
 # Radio buttons to select input method
 input_method = st.radio("Select input method (if you don't live in a city you can enter your latitude and longitude)", ("City and State", "Latitude and Longitude"))
 
@@ -171,7 +166,7 @@ m = folium.Map(location=oklahoma_coords, zoom_start=7)
 for i, row in locations_df.iterrows():
     folium.CircleMarker(
         location=[row['Latitude'], row['Longitude']],
-        radius=6,
+        radius=5,
         color='#0000FF',
         fill=True,
         fill_color='#0000FF',
@@ -197,20 +192,17 @@ m.fit_bounds(bounds)
 
 # Group by city and state to get counts
 location_counts = locations_df.groupby(['City', 'State']).size().reset_index(name='Count')
-# Display the DataFrame with counts
-st.dataframe(location_counts)
 
 # Add a running total of all entries at the bottom of the dataframe
 total_count = pd.DataFrame({'City': ['Total'], 'State': [''], 'Count': [location_counts['Count'].sum()]})
 location_counts_with_total = pd.concat([location_counts, total_count], ignore_index=True)
 st.dataframe(location_counts_with_total)
 
-
 #Display the map and Dataframe
 container = st.container()
 with container:
     st_folium(m, width='100%', height=400)
-    st.dataframe(location_counts)
+    st.dataframe(location_counts_with_total)
     
 #close db connection
 conn.close()
